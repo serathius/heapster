@@ -67,7 +67,6 @@ container:
 	cp deploy/docker/Dockerfile $(TEMP_DIR)
 	# The next command runs 'docker build' in Cloud Builder.
 	gcloud builds submit -t $(PREFIX)/heapster-$(ARCH):$(VERSION) $(TEMP_DIR)
-	docker pull $(PREFIX)/heapster-$(ARCH):$(VERSION)
 ifneq ($(OVERRIDE_IMAGE_NAME),)
 	docker tag $(PREFIX)/heapster-$(ARCH):$(VERSION) $(OVERRIDE_IMAGE_NAME)
 endif
