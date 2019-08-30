@@ -11,7 +11,8 @@ ifndef TEMP_DIR
 TEMP_DIR:=$(shell mktemp -d /tmp/heapster.XXXXXX)
 endif
 
-VERSION?=v2.0.0
+# This version is used as a tag for development images only.
+VERSION?=dev
 GIT_COMMIT:=$(shell git rev-parse --short HEAD)
 
 ifdef REPO_DIR
