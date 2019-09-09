@@ -42,6 +42,9 @@ const (
 	maxTimeseriesPerRequest = 200
 	// 2 seconds on SD side, 1 extra for networking overhead
 	sdRequestLatencySec = 3
+
+	// Upon backend issues, buffer up to 5 batches.
+	batchesBufferSize = 5
 )
 
 type StackdriverSink struct {
@@ -56,6 +59,7 @@ type StackdriverSink struct {
 	initialDelaySec       int
 	useOldResourceModel   bool
 	useNewResourceModel   bool
+	batchesQueue          chan []*monitoringpb.CreateTimeSeriesRequest
 }
 
 type metricMetadata struct {
@@ -101,6 +105,7 @@ func (sink *StackdriverSink) Name() string {
 }
 
 func (sink *StackdriverSink) Stop() {
+	close(sink.batchesQueue)
 }
 
 func (sink *StackdriverSink) processMetrics(metricValues map[string]core.MetricValue,
@@ -197,7 +202,12 @@ func (sink *StackdriverSink) ExportData(dataBatch *core.DataBatch) {
 		requests = append(requests, req)
 	}
 
-	go sink.sendRequests(requests)
+	select {
+	case sink.batchesQueue <- requests:
+		// queue not full, batch will be processed
+	default:
+		klog.Warningf("Queue full, dropping a batch of %d requests.", len(requests))
+	}
 }
 
 func (sink *StackdriverSink) sendRequests(requests []*monitoringpb.CreateTimeSeriesRequest) {
@@ -441,6 +451,7 @@ func CreateStackdriverSink(uri *url.URL) (core.DataSink, error) {
 		initialDelaySec:       initialDelaySec,
 		useOldResourceModel:   useOldResourceModel,
 		useNewResourceModel:   useNewResourceModel,
+		batchesQueue:          make(chan []*monitoringpb.CreateTimeSeriesRequest, batchesBufferSize),
 	}
 
 	// Register sink metrics
@@ -450,7 +461,19 @@ func CreateStackdriverSink(uri *url.URL) (core.DataSink, error) {
 
 	klog.Infof("Created Stackdriver sink")
 
+	go sink.processBatchesSequentially()
+
 	return sink, nil
+}
+
+func (sink *StackdriverSink) processBatchesSequentially() {
+	for {
+		if requests, more := <-sink.batchesQueue; more {
+			sink.sendRequests(requests)
+		} else {
+			return
+		}
+	}
 }
 
 func parseBoolFlag(opts map[string][]string, name string, targetValue *bool) error {
