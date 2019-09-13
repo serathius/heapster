@@ -47,7 +47,6 @@ func (this *NodeAutoscalingEnricher) Process(batch *core.DataBatch) (*core.DataB
 			this.labelCopier.Copy(node.Labels, metricSet.Labels)
 			capacityCpu, _ := node.Status.Capacity[kube_api.ResourceCPU]
 			capacityMem, _ := node.Status.Capacity[kube_api.ResourceMemory]
-			capacityEphemeralStorage, storageExist := node.Status.Capacity[kube_api.ResourceEphemeralStorage]
 			allocatableCpu, _ := node.Status.Allocatable[kube_api.ResourceCPU]
 			allocatableMem, _ := node.Status.Allocatable[kube_api.ResourceMemory]
 			allocatableEphemeralStorage, allocatableStorageExist := node.Status.Allocatable[kube_api.ResourceEphemeralStorage]
@@ -73,9 +72,7 @@ func (this *NodeAutoscalingEnricher) Process(batch *core.DataBatch) (*core.DataB
 			setFloat(metricSet, &core.MetricNodeMemoryCapacity, float64(capacityMem.Value()))
 			setFloat(metricSet, &core.MetricNodeMemoryAllocatable, float64(allocatableMem.Value()))
 
-			if storageExist && allocatableStorageExist {
-				setFloat(metricSet, &core.MetricNodeEphemeralStorageCapacity, float64(capacityEphemeralStorage.Value()))
-				setFloat(metricSet, &core.MetricNodeEphemeralStorageAllocatable, float64(allocatableEphemeralStorage.Value()))
+			if allocatableStorageExist {
 				if allocatableEphemeralStorage.Value() != 0 {
 					setFloat(metricSet, &core.MetricNodeEphemeralStorageUtilization, float64(epheUsed)/float64(allocatableEphemeralStorage.Value()))
 					setFloat(metricSet, &core.MetricNodeEphemeralStorageReservation, float64(epheRequested)/float64(allocatableEphemeralStorage.Value()))

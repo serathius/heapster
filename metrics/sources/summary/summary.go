@@ -267,6 +267,8 @@ func (this *summaryMetricsSource) decodeEphemeralStorageStats(metrics *MetricSet
 		return
 	}
 	this.addIntMetric(metrics, &MetricEphemeralStorageUsage, storage.UsedBytes)
+	this.addIntMetric(metrics, &MetricNodeEphemeralStorageCapacity, storage.CapacityBytes)
+	this.addIntMetric(metrics, &MetricNodeEphemeralStorageAllocatable, storage.AvailableBytes)
 }
 
 func (this *summaryMetricsSource) decodeEphemeralStorageStatsForContainer(metrics *MetricSet, rootfs *stats.FsStats, logs *stats.FsStats) {

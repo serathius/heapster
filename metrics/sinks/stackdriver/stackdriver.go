@@ -841,6 +841,12 @@ func (sink *StackdriverSink) TranslateMetric(timestamp time.Time, labels map[str
 		case core.MetricNodeEphemeralStorageCapacity.MetricDescriptor.Name:
 			point := sink.intPoint(timestamp, timestamp, value.IntValue)
 			return createTimeSeries("k8s_node", nodeLabels, ephemeralstorageTotalBytesMD, point)
+		case core.MetricNodeEphemeralStorageAllocatable.MetricDescriptor.Name:
+			point := sink.intPoint(timestamp, timestamp, value.IntValue)
+			return createTimeSeries("k8s_node", nodeLabels, ephemeralstorageAllocatableBytesMD, point)
+		case core.MetricEphemeralStorageUsage.MetricDescriptor.Name:
+			point := sink.intPoint(timestamp, timestamp, value.IntValue)
+			return createTimeSeries("k8s_node", nodeLabels, ephemeralstorageNodeUsedBytesMD, point)
 		case core.MetricRlimitMaxPID.MetricDescriptor.Name:
 			point := sink.intPoint(timestamp, timestamp, value.IntValue)
 			return createTimeSeries("k8s_node", nodeLabels, pidLimitMD, point)
