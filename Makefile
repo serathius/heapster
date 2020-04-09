@@ -57,7 +57,7 @@ endif
 test-unit-cov: clean sanitize build
 	hooks/coverage.sh
 
-container:
+build-in-container:
 	# Run the build in a container in order to have reproducible builds
 	# Also, fetch the latest ca certificates
 	docker run --rm -i $(TTY) -v $(TEMP_DIR):/build -v $(REPO_DIR):/go/src/github.com/Stackdriver/heapster -w /go/src/github.com/Stackdriver/heapster golang:$(GOLANG_VERSION) /bin/bash -c "\
@@ -65,9 +65,9 @@ container:
 		&& GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags \"$(HEAPSTER_LDFLAGS)\" -o /build/heapster github.com/Stackdriver/heapster/metrics \
 		&& GOARCH=$(ARCH) CGO_ENABLED=0 go build -ldflags \"$(HEAPSTER_LDFLAGS)\" -o /build/eventer github.com/Stackdriver/heapster/events"
 
+container: build-in-container
 	cp deploy/docker/Dockerfile $(TEMP_DIR)
 	docker build -t $(PREFIX)/heapster-$(ARCH):$(VERSION) $(TEMP_DIR)
-	gcloud docker -- push $(PREFIX)/heapster-$(ARCH):$(VERSION)
 ifneq ($(OVERRIDE_IMAGE_NAME),)
 	docker tag $(PREFIX)/heapster-$(ARCH):$(VERSION) $(OVERRIDE_IMAGE_NAME)
 endif
@@ -75,6 +75,9 @@ endif
 ifndef DOCKER_IN_DOCKER
 	rm -rf $(TEMP_DIR)
 endif
+
+push-one-arch: container
+	gcloud docker -- push $(PREFIX)/heapster-$(ARCH):$(VERSION)
 
 do-push:
 	docker push $(PREFIX)/heapster-$(ARCH):$(VERSION)
